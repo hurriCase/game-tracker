@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game Category Tracker</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; color: #1a1a18; min-height: 100vh; padding: 1.5rem; }
+.app { max-width: 900px; margin: 0 auto; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 8px; }
+.header h1 { font-size: 20px; font-weight: 600; }
+.header-actions { display: flex; gap: 8px; }
+.categories { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+.cat-card { background: #fff; border: 1px solid #e0dfd8; border-radius: 12px; padding: 1rem; }
+.cat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.cat-title { font-size: 13px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+.cat-easy .cat-title { color: #3B6D11; }
+.cat-medium .cat-title { color: #854F0B; }
+.cat-hard .cat-title { color: #A32D2D; }
+.cat-count { font-size: 11px; padding: 2px 8px; border-radius: 99px; }
+.cat-easy .cat-count { background: #EAF3DE; color: #3B6D11; }
+.cat-medium .cat-count { background: #FAEEDA; color: #854F0B; }
+.cat-hard .cat-count { background: #FCEBEB; color: #A32D2D; }
+.players-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; max-height: 300px; overflow-y: auto; }
+.player-row { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; user-select: none; transition: background 0.1s; }
+.player-row:hover { background: #f5f4f0; }
+.cat-easy .player-row.selected { background: #EAF3DE; border-color: #97C459; }
+.cat-medium .player-row.selected { background: #FAEEDA; border-color: #EF9F27; }
+.cat-hard .player-row.selected { background: #FCEBEB; border-color: #F09595; }
+.check { width: 14px; height: 14px; border: 1px solid #ccc; border-radius: 3px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.cat-easy .player-row.selected .check { background: #639922; border-color: #639922; }
+.cat-medium .player-row.selected .check { background: #BA7517; border-color: #BA7517; }
+.cat-hard .player-row.selected .check { background: #E24B4A; border-color: #E24B4A; }
+.check svg { display: none; }
+.player-row.selected .check svg { display: block; }
+.player-name { font-size: 13px; flex: 1; }
+.player-score-inline { font-size: 11px; color: #888; }
+.confirm-btn { width: 100%; padding: 7px; font-size: 13px; border-radius: 8px; cursor: pointer; border: 1px solid; font-weight: 500; transition: background 0.1s; }
+.cat-easy .confirm-btn { background: #EAF3DE; border-color: #639922; color: #3B6D11; }
+.cat-easy .confirm-btn:hover:not(:disabled) { background: #C0DD97; }
+.cat-medium .confirm-btn { background: #FAEEDA; border-color: #BA7517; color: #854F0B; }
+.cat-medium .confirm-btn:hover:not(:disabled) { background: #FAC775; }
+.cat-hard .confirm-btn { background: #FCEBEB; border-color: #E24B4A; color: #A32D2D; }
+.cat-hard .confirm-btn:hover:not(:disabled) { background: #F7C1C1; }
+.confirm-btn:disabled { opacity: 0.4; cursor: default; }
+.section-title { font-size: 13px; font-weight: 500; color: #666; margin-bottom: 8px; }
+.scores-table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid #e0dfd8; }
+.scores-table th { text-align: left; padding: 8px 10px; color: #666; font-weight: 500; border-bottom: 1px solid #e0dfd8; background: #f9f8f4; }
+.scores-table td { padding: 6px 10px; border-bottom: 1px solid #f0efe8; }
+.scores-table tr:last-child td { border-bottom: none; }
+.scores-table td input { width: 50px; font-size: 13px; padding: 2px 4px; border: 1px solid #ddd; border-radius: 4px; text-align: center; font-family: inherit; }
+.scores-table td input:focus { outline: none; border-color: #aaa; }
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1a1a18; color: #fff; border-radius: 8px; padding: 8px 18px; font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+.toast.show { opacity: 1; }
+.export-btn, .reset-btn { font-size: 12px; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-family: inherit; }
+.export-btn { background: #fff; border: 1px solid #ccc; color: #444; }
+.export-btn:hover { background: #f5f4f0; }
+.reset-btn { background: #fff; border: 1px solid #F09595; color: #A32D2D; }
+.reset-btn:hover { background: #FCEBEB; }
+.select-all-row { display: flex; align-items: center; gap: 8px; padding: 4px 8px 6px; margin-bottom: 2px; border-bottom: 1px solid #f0efe8; }
+.select-all-row label { font-size: 11px; color: #999; cursor: pointer; }
+@media (max-width: 600px) { .categories { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>Game Category Tracker</h1>
+    <div class="header-actions">
+      <button class="export-btn" onclick="exportData()">Export .txt</button>
+      <button class="reset-btn" onclick="resetAll()">Reset all</button>
+    </div>
+  </div>
+  <div class="categories">
+    <div class="cat-card cat-easy" id="cat-easy"></div>
+    <div class="cat-card cat-medium" id="cat-medium"></div>
+    <div class="cat-card cat-hard" id="cat-hard"></div>
+  </div>
+  <p class="section-title">Score overview — edit cells to fix mistakes</p>
+  <table class="scores-table" id="scores-table"></table>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const PLAYERS = ['B1gP1g','UZB','mihail','linhnhi','oOoKeyoOo','jpfuji','MiniPig','IceWater','SayLove','Ez7','2022','SayYes','XL','Расули','Only'];
+const CATS = [{key:'easy',label:'Easy'},{key:'medium',label:'Medium'},{key:'hard',label:'Hard'}];
+const STORAGE_KEY = 'gct_scores_v1';
+let scores = {};
+let selected = {easy:new Set(),medium:new Set(),hard:new Set()};
+
+function loadScores() {
+  try { const s = localStorage.getItem(STORAGE_KEY); if (s) scores = JSON.parse(s); } catch(e) {}
+  PLAYERS.forEach(p => {
+    if (!scores[p]) scores[p] = {easy:0,medium:0,hard:0};
+    CATS.forEach(c => { if (scores[p][c.key] == null) scores[p][c.key] = 0; });
+  });
+}
+
+function saveScores() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(scores)); } catch(e) {}
+}
+
+function renderCategories() {
+  CATS.forEach(cat => {
+    const container = document.getElementById('cat-' + cat.key);
+    const selCount = selected[cat.key].size;
+    container.innerHTML = `
+      <div class="cat-header">
+        <span class="cat-title">${cat.label}</span>
+        <span class="cat-count">${selCount} selected</span>
+      </div>
+      <div class="players-list">
+        <div class="select-all-row">
+          <input type="checkbox" id="all-${cat.key}" onchange="toggleAll('${cat.key}', this.checked)">
+          <label for="all-${cat.key}">Select all</label>
+        </div>
+        ${PLAYERS.map(player => `
+          <div class="player-row ${selected[cat.key].has(player)?'selected':''}" onclick="togglePlayer('${cat.key}','${player}')">
+            <div class="check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+            <span class="player-name">${player}</span>
+            <span class="player-score-inline">${scores[player][cat.key]}</span>
+          </div>`).join('')}
+      </div>
+      <button class="confirm-btn" onclick="countCategory('${cat.key}')" ${selCount===0?'disabled':''}>
+        Count${selCount>0?' ('+selCount+')':''}
+      </button>`;
+    const allBox = document.getElementById('all-' + cat.key);
+    if (allBox) allBox.checked = selCount === PLAYERS.length;
+  });
+}
+
+function renderTable() {
+  const sorted = [...PLAYERS].sort((a,b) => {
+    const ta = scores[a].easy+scores[a].medium+scores[a].hard;
+    const tb = scores[b].easy+scores[b].medium+scores[b].hard;
+    return tb - ta;
+  });
+  document.getElementById('scores-table').innerHTML = `
+    <thead><tr><th>Player</th><th>Easy</th><th>Medium</th><th>Hard</th><th>Total</th></tr></thead>
+    <tbody>${sorted.map(player => {
+      const e=scores[player].easy, m=scores[player].medium, h=scores[player].hard;
+      return `<tr>
+        <td><strong>${player}</strong></td>
+        <td><input type="number" min="0" value="${e}" onchange="manualEdit('${player}','easy',this.value)"></td>
+        <td><input type="number" min="0" value="${m}" onchange="manualEdit('${player}','medium',this.value)"></td>
+        <td><input type="number" min="0" value="${h}" onchange="manualEdit('${player}','hard',this.value)"></td>
+        <td><strong>${e+m+h}</strong></td>
+      </tr>`;
+    }).join('')}</tbody>`;
+}
+
+function togglePlayer(catKey, player) {
+  if (selected[catKey].has(player)) selected[catKey].delete(player);
+  else selected[catKey].add(player);
+  renderCategories();
+}
+
+function toggleAll(catKey, checked) {
+  if (checked) PLAYERS.forEach(p => selected[catKey].add(p));
+  else selected[catKey].clear();
+  renderCategories();
+}
+
+function countCategory(catKey) {
+  if (selected[catKey].size === 0) return;
+  selected[catKey].forEach(player => { scores[player][catKey]++; });
+  selected[catKey].clear();
+  saveScores(); renderCategories(); renderTable();
+  showToast('Counted!');
+}
+
+function manualEdit(player, catKey, value) {
+  scores[player][catKey] = Math.max(0, parseInt(value) || 0);
+  saveScores(); renderCategories(); renderTable();
+}
+
+function exportData() {
+  const sorted = [...PLAYERS].sort((a,b) => {
+    return (scores[b].easy+scores[b].medium+scores[b].hard) - (scores[a].easy+scores[a].medium+scores[a].hard);
+  });
+  const lines = ['Game Category Tracker', new Date().toLocaleString(), '', 'Player'.padEnd(16)+'Easy'.padEnd(8)+'Medium'.padEnd(10)+'Hard'.padEnd(8)+'Total', '-'.repeat(46)];
+  sorted.forEach(p => {
+    const e=scores[p].easy, m=scores[p].medium, h=scores[p].hard;
+    lines.push(p.padEnd(16)+String(e).padEnd(8)+String(m).padEnd(10)+String(h).padEnd(8)+(e+m+h));
+  });
+  const blob = new Blob([lines.join('\n')], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'scores.txt'; a.click();
+}
+
+function resetAll() {
+  if (!confirm('Reset ALL scores to zero?')) return;
+  PLAYERS.forEach(p => { scores[p] = {easy:0,medium:0,hard:0}; });
+  selected = {easy:new Set(),medium:new Set(),hard:new Set()};
+  saveScores(); renderCategories(); renderTable();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+loadScores(); renderCategories(); renderTable();
+</script>
+</body>
+</html>
